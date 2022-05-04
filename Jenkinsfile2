@@ -1,0 +1,48 @@
+ pipeline{
+    agent any
+    tools{
+      maven "maven3.8.4"
+    }
+stages{
+  stage('1.GitClone'){
+  steps{
+    sh "echo Github cloning"
+    git 'https://github.com/ojasemota/web-app.git'
+  }
+}
+stage('2.MavenBuild'){
+  steps{
+  sh "echo build packages"
+  sh "mvn clean package"
+}
+}
+stage('4.backupArchitfacts'){
+  steps{
+    sh "mvn deploy"
+  }
+  }
+ stage('5.Deploytostaging'){
+     steps{
+         deploy adapters: [tomcat9(credentialsId: 'tomcat_cred', path: '', url: 'http://3.14.11.36:7000/')], contextPath: null, war: 'target/*.war'
+     }
+ }
+ stage('6.Approval'){
+    steps{
+    sh "echo Approval Needed"
+    timeout(time:5,unit:'DAYS'){
+      input message:'Approval for Production'
+    }
+  }
+}
+ stage('7.Deploytostaging'){
+     steps{
+         deploy adapters: [tomcat9(credentialsId: 'tomcat_cred', path: '', url: 'http://3.14.11.36:7000/')], contextPath: null, war: 'target/*.war'
+     }
+ }
+ stage('8.Emailnotification'){
+  steps{
+    emailext body: 'This build was successful', subject: 'Build Success', to: 'ojasemota@gmail.com'
+  }
+ }
+}
+}
